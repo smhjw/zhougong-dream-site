@@ -8,32 +8,30 @@ const quickTags = document.querySelectorAll(".quick-tag");
 const HISTORY_KEY = "zhougong_dream_history_v1";
 const DEFAULT_ADVICE = "可结合现实情境做交叉判断，避免过度解读单一梦境。";
 
-// 在线接口配置：
-// 1) 将 key 填成你自己的 API Key
-// 2) 若不使用某个服务，可把 enabled 改为 false
-// 3) 建议至少启用一个服务，未命中本地词库时会自动调用
+// 最简在线配置：
+// 1) 只需要填 ONLINE_DREAM_KEY
+// 2) 默认使用天行数据，可选改 ONLINE_PROVIDER = "jisuapi"
+const ONLINE_DREAM_KEY = "";
+const ONLINE_PROVIDER = "tianapi";
+
 const ONLINE_API_CONFIG = {
   timeoutMs: 8000,
-  providers: [
-    {
+  providers: {
+    tianapi: {
       name: "tianapi",
       label: "天行数据",
-      enabled: false,
       endpoint: "https://apis.tianapi.com/zhougong/index",
       keyParam: "key",
-      queryParam: "word",
-      key: ""
+      queryParam: "word"
     },
-    {
+    jisuapi: {
       name: "jisuapi",
       label: "极速数据",
-      enabled: false,
       endpoint: "https://api.jisuapi.com/dream/search",
       keyParam: "appkey",
-      queryParam: "keyword",
-      key: ""
+      queryParam: "keyword"
     }
-  ]
+  }
 };
 
 const DREAM_DB = [
@@ -225,21 +223,17 @@ async function fetchJsonWithTimeout(url, timeoutMs) {
 }
 
 async function fetchOnlineDream(keyword) {
-  const providers = ONLINE_API_CONFIG.providers.filter(
-    (p) => p.enabled && p.endpoint && p.key && p.queryParam && p.keyParam
-  );
+  if (!ONLINE_DREAM_KEY) return null;
 
-  if (!providers.length) return null;
+  const provider = ONLINE_API_CONFIG.providers[ONLINE_PROVIDER];
+  if (!provider || !provider.endpoint || !provider.queryParam || !provider.keyParam) return null;
 
-  for (const provider of providers) {
-    const url = buildProviderUrl(provider, keyword);
-    const payload = await fetchJsonWithTimeout(url, ONLINE_API_CONFIG.timeoutMs);
-    if (!payload) continue;
-    const parsed = parseProviderResult(provider, payload, keyword);
-    if (parsed) return parsed;
-  }
+  const requestProvider = { ...provider, key: ONLINE_DREAM_KEY };
+  const url = buildProviderUrl(requestProvider, keyword);
+  const payload = await fetchJsonWithTimeout(url, ONLINE_API_CONFIG.timeoutMs);
+  if (!payload) return null;
 
-  return null;
+  return parseProviderResult(requestProvider, payload, keyword);
 }
 
 function readHistory() {

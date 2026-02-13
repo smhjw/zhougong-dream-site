@@ -28,10 +28,9 @@ python -m http.server 8080
 
 配置位置：`app.js` 中的 `ONLINE_API_CONFIG`
 
-做法：
-1. 选一个 provider（例如天行数据/极速数据）
-2. 将 `enabled: false` 改成 `true`
-3. 填入你在该平台申请到的 `key`
+做法（现在是单 key 模式）：
+1. 在 `app.js` 填入 `ONLINE_DREAM_KEY`
+2. 默认提供商是 `ONLINE_PROVIDER = "tianapi"`（可改成 `"jisuapi"`）
 
 注意：
 - GitHub Pages 上运行的是纯前端页面，API Key 会暴露在浏览器里，不适合放敏感 key。
