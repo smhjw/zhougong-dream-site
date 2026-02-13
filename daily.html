@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>每日梦境运势签 | 周公解梦</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-shape shape-a"></div>
+  <div class="bg-shape shape-b"></div>
+  <div class="bg-shape shape-c"></div>
+
+  <header class="hero">
+    <p class="chip">一日一签</p>
+    <h1>每日梦境运势</h1>
+    <p class="subtitle">抽取今日梦签，查看你的梦境能量提示</p>
+    <p class="nav-line"><a class="nav-link" href="index.html">返回解梦主页</a></p>
+  </header>
+
+  <main class="container">
+    <section class="panel daily-panel">
+      <p class="daily-date">日期：<span id="todayText"></span></p>
+      <div id="lotCard" class="lot-card waiting">
+        <p class="lot-top">梦签尚未抽取</p>
+        <h2 id="lotTitle">静待启签</h2>
+        <p id="lotLevel" class="lot-level">运势：--</p>
+        <p id="lotDream" class="lot-item"><strong>梦境提示：</strong>--</p>
+        <p id="lotDo" class="lot-item"><strong>宜：</strong>--</p>
+        <p id="lotAvoid" class="lot-item"><strong>忌：</strong>--</p>
+        <p id="lotLucky" class="lot-item"><strong>幸运象：</strong>--</p>
+      </div>
+      <div class="daily-actions">
+        <button id="drawBtn" class="draw-btn">抽取今日签</button>
+        <button id="previewBtn" class="ghost-btn" type="button">试抽一签（不覆盖今日）</button>
+      </div>
+      <p id="dailyTip" class="daily-tip">今日签会保存在当前浏览器中，次日自动更新。</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>仅供娱乐与文化参考，不构成医疗或心理诊断建议。</p>
+  </footer>
+
+  <script src="daily.js"></script>
+</body>
+</html>

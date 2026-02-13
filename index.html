@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>周公解梦 | 在线解梦</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="bg-shape shape-a"></div>
+  <div class="bg-shape shape-b"></div>
+  <div class="bg-shape shape-c"></div>
+
+  <header class="hero">
+    <p class="chip">古意新解</p>
+    <h1>周公解梦</h1>
+    <p class="subtitle">输入梦境关键词，快速查看传统释义与行动建议</p>
+    <p class="nav-line"><a class="nav-link" href="daily.html">进入抽签式每日梦境运势</a></p>
+  </header>
+
+  <main class="container">
+    <section class="panel query-panel">
+      <label for="dreamInput">你梦到了什么？</label>
+      <div class="input-row">
+        <input id="dreamInput" type="text" placeholder="例如：蛇、掉牙、下雨、考试、飞起来..." />
+        <button id="analyzeBtn">开始解梦</button>
+      </div>
+      <div class="quick-row">
+        <span>热门：</span>
+        <button class="quick-tag" data-key="蛇">蛇</button>
+        <button class="quick-tag" data-key="掉牙">掉牙</button>
+        <button class="quick-tag" data-key="考试">考试</button>
+        <button class="quick-tag" data-key="下雨">下雨</button>
+        <button class="quick-tag" data-key="飞">飞</button>
+      </div>
+    </section>
+
+    <section class="panel result-panel">
+      <h2>解梦结果</h2>
+      <div id="resultBox" class="result-box placeholder">输入关键词后查看解梦内容。</div>
+    </section>
+
+    <section class="panel history-panel">
+      <div class="history-title-row">
+        <h2>最近查询</h2>
+        <button id="clearHistoryBtn" class="ghost-btn">清空</button>
+      </div>
+      <ul id="historyList" class="history-list"></ul>
+    </section>
+  </main>
+
+  <footer>
+    <p>仅供娱乐与文化参考，不构成医疗或心理诊断建议。</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
