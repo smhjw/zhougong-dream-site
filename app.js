@@ -6,6 +6,35 @@ const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 const quickTags = document.querySelectorAll(".quick-tag");
 
 const HISTORY_KEY = "zhougong_dream_history_v1";
+const DEFAULT_ADVICE = "可结合现实情境做交叉判断，避免过度解读单一梦境。";
+
+// 在线接口配置：
+// 1) 将 key 填成你自己的 API Key
+// 2) 若不使用某个服务，可把 enabled 改为 false
+// 3) 建议至少启用一个服务，未命中本地词库时会自动调用
+const ONLINE_API_CONFIG = {
+  timeoutMs: 8000,
+  providers: [
+    {
+      name: "tianapi",
+      label: "天行数据",
+      enabled: false,
+      endpoint: "https://apis.tianapi.com/zhougong/index",
+      keyParam: "key",
+      queryParam: "word",
+      key: ""
+    },
+    {
+      name: "jisuapi",
+      label: "极速数据",
+      enabled: false,
+      endpoint: "https://api.jisuapi.com/dream/search",
+      keyParam: "appkey",
+      queryParam: "keyword",
+      key: ""
+    }
+  ]
+};
 
 const DREAM_DB = [
   {
@@ -77,6 +106,15 @@ function sanitizeText(text) {
   return text.replace(/[<>]/g, "").trim();
 }
 
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 function findDream(keyword) {
   const normalized = keyword.toLowerCase();
   return DREAM_DB.find((item) =>
@@ -95,12 +133,113 @@ function fallbackDream(keyword) {
 
 function renderResult(result) {
   resultBox.classList.remove("placeholder");
+  const title = escapeHtml(result.title || "解梦结果");
+  const meaning = escapeHtml(result.meaning || "暂无释义");
+  const advice = escapeHtml(result.advice || DEFAULT_ADVICE);
+  const luck = escapeHtml(result.luck || "中平");
+  const source = result.source ? `<p class="result-item"><strong>数据来源：</strong>${escapeHtml(result.source)}</p>` : "";
   resultBox.innerHTML = `
-    <h3 class="result-title">${result.title}</h3>
-    <p class="result-item"><strong>传统释义：</strong>${result.meaning}</p>
-    <p class="result-item"><strong>行动建议：</strong>${result.advice}</p>
-    <p class="result-item"><strong>运势参考：</strong>${result.luck}</p>
+    <h3 class="result-title">${title}</h3>
+    <p class="result-item"><strong>传统释义：</strong>${meaning}</p>
+    <p class="result-item"><strong>行动建议：</strong>${advice}</p>
+    <p class="result-item"><strong>运势参考：</strong>${luck}</p>
+    ${source}
   `;
+}
+
+function toText(value) {
+  if (typeof value === "string") return value.trim();
+  if (Array.isArray(value)) return value.map((item) => toText(item)).filter(Boolean).join("；");
+  if (value && typeof value === "object") return "";
+  if (value === undefined || value === null) return "";
+  return String(value).trim();
+}
+
+function pickField(obj, fields) {
+  for (const name of fields) {
+    const val = toText(obj?.[name]);
+    if (val) return val;
+  }
+  return "";
+}
+
+function pickResultNode(payload) {
+  if (!payload || typeof payload !== "object") return null;
+  const candidates = [payload.result, payload.data, payload.newslist, payload.list];
+  for (const item of candidates) {
+    if (Array.isArray(item) && item.length) return item[0];
+    if (item && typeof item === "object") return item;
+  }
+  return payload;
+}
+
+function parseProviderResult(provider, payload, keyword) {
+  const node = pickResultNode(payload);
+  if (!node || typeof node !== "object") return null;
+
+  const titleName = pickField(node, ["name", "title", "word", "keyword"]);
+  const meaning = pickField(node, [
+    "content",
+    "description",
+    "desc",
+    "detail",
+    "analysis",
+    "explain",
+    "jiexi",
+    "result"
+  ]);
+
+  if (!meaning) return null;
+
+  const advice = pickField(node, ["advice", "suggest", "tip", "tips", "yi", "jyi"]) || DEFAULT_ADVICE;
+  const luck = pickField(node, ["luck", "fortune", "type", "jixiong", "level"]) || "中平";
+
+  return {
+    title: titleName ? `梦见「${titleName}」` : `梦见「${keyword}」`,
+    meaning,
+    advice,
+    luck,
+    source: `在线接口（${provider.label}）`
+  };
+}
+
+function buildProviderUrl(provider, keyword) {
+  const url = new URL(provider.endpoint);
+  url.searchParams.set(provider.queryParam, keyword);
+  url.searchParams.set(provider.keyParam, provider.key);
+  return url.toString();
+}
+
+async function fetchJsonWithTimeout(url, timeoutMs) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const resp = await fetch(url, { signal: controller.signal });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch (_) {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function fetchOnlineDream(keyword) {
+  const providers = ONLINE_API_CONFIG.providers.filter(
+    (p) => p.enabled && p.endpoint && p.key && p.queryParam && p.keyParam
+  );
+
+  if (!providers.length) return null;
+
+  for (const provider of providers) {
+    const url = buildProviderUrl(provider, keyword);
+    const payload = await fetchJsonWithTimeout(url, ONLINE_API_CONFIG.timeoutMs);
+    if (!payload) continue;
+    const parsed = parseProviderResult(provider, payload, keyword);
+    if (parsed) return parsed;
+  }
+
+  return null;
 }
 
 function readHistory() {
@@ -145,7 +284,7 @@ function renderHistory() {
   }
 }
 
-function runAnalyze(rawText) {
+async function runAnalyze(rawText) {
   const keyword = sanitizeText(rawText);
   if (!keyword) {
     resultBox.classList.add("placeholder");
@@ -153,9 +292,29 @@ function runAnalyze(rawText) {
     return;
   }
 
-  const matched = findDream(keyword) || fallbackDream(keyword);
+  analyzeBtn.disabled = true;
+  const oldText = analyzeBtn.textContent;
+  analyzeBtn.textContent = "解梦中...";
+
+  const localMatched = findDream(keyword);
+  if (localMatched) {
+    renderResult({ ...localMatched, source: "本地词库" });
+    pushHistory(keyword);
+    analyzeBtn.disabled = false;
+    analyzeBtn.textContent = oldText;
+    return;
+  }
+
+  const onlineMatched = await fetchOnlineDream(keyword);
+  const matched = onlineMatched || fallbackDream(keyword);
+  if (!onlineMatched) {
+    matched.source = "本地兜底（在线接口未配置或请求失败）";
+  }
+
   renderResult(matched);
   pushHistory(keyword);
+  analyzeBtn.disabled = false;
+  analyzeBtn.textContent = oldText;
 }
 
 analyzeBtn.addEventListener("click", () => runAnalyze(dreamInput.value));
